@@ -1,9 +1,11 @@
+use bson_module::{store_document, string_to_document};
 use command_handler::Command;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
 };
 mod bson_module;
+mod bson_module_save;
 mod command_handler;
 
 #[tokio::main]
@@ -115,15 +117,30 @@ async fn handle_response(socket: &mut TcpStream, command: Command, data: String)
 }
 
 async fn handle_insert(data: String) -> Result<String, String> {
-    let bson = bson_module::string_to_bson(data);
-    match bson_module::store_bson(bson).await {
-        Ok(res) => return Ok(res),
+    let document;
+
+    match bson_module::string_to_document(data) {
+        Ok(res) => document = res,
+        Err(e) => return Err(e),
+    }
+
+    match bson_module::read_collection_deserialized().await {
+        Ok(vec) => match store_document(document, vec).await {
+            Ok(res) => return Ok(res),
+            Err(e) => return Err(e),
+        },
         Err(e) => return Err(e),
     }
 }
 
-async fn handle_find(_data: String) -> Result<String, String> {
-    return Err("Unimplemented".to_string());
+async fn handle_find(data: String) -> Result<String, String> {
+    match string_to_document(data) {
+        Ok(doc) => {
+            println!("Document: {:?}", doc);
+            return Err("Unimplemented".to_string());
+        }
+        Err(e) => return Err(e),
+    };
 }
 
 async fn handle_update(_data: String) -> Result<String, String> {
