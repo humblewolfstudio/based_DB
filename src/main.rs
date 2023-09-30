@@ -1,4 +1,7 @@
-use bson_module::{store_document, string_to_document};
+use bson_module::{
+    read_collection, read_collection_deserialized, search_in_vector_document, serialize_collection,
+    store_document, string_to_document, serialize_collection_to_string,
+};
 use command_handler::Command;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -135,10 +138,16 @@ async fn handle_insert(data: String) -> Result<String, String> {
 
 async fn handle_find(data: String) -> Result<String, String> {
     match string_to_document(data) {
-        Ok(doc) => {
-            println!("Document: {:?}", doc);
-            return Err("Unimplemented".to_string());
-        }
+        Ok(doc) => match read_collection_deserialized().await {
+            Ok(vec) => {
+                let found = search_in_vector_document(vec, doc);
+                match serialize_collection_to_string(found) {
+                    Ok(vec) => return Ok(vec),
+                    Err(e) => return Err("Failed to stringify BSON documents to JSON.".to_string()),
+                }
+            }
+            Err(e) => return Err(e),
+        },
         Err(e) => return Err(e),
     };
 }
