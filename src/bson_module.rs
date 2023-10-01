@@ -102,6 +102,7 @@ fn bson_value_to_json_value(bson_value: &Bson) -> Result<Value, serde_json::Erro
     return serde_json::to_value(bson_value);
 }
 
+#[allow(dead_code)]
 fn serialize_document(document: Document) -> Result<Vec<u8>, String> {
     let mut serialized_data: Vec<u8> = Vec::new();
     document
@@ -111,6 +112,7 @@ fn serialize_document(document: Document) -> Result<Vec<u8>, String> {
     return Ok(serialized_data);
 }
 
+#[allow(dead_code)]
 fn deserialize_document(vec: Vec<u8>) -> Result<Document, String> {
     let document = from_reader(&vec[..]).expect("Failed to deserialize BSON");
     return Ok(document);

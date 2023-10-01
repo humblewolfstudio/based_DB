@@ -1,5 +1,5 @@
 use bson_module::{
-    read_collection, read_collection_deserialized, search_in_vector_document, serialize_collection,
+    read_collection_deserialized, search_in_vector_document,
     store_document, string_to_document, serialize_collection_to_string,
 };
 use command_handler::Command;
@@ -8,7 +8,6 @@ use tokio::{
     net::{TcpListener, TcpStream},
 };
 mod bson_module;
-mod bson_module_save;
 mod command_handler;
 
 #[tokio::main]
@@ -143,7 +142,7 @@ async fn handle_find(data: String) -> Result<String, String> {
                 let found = search_in_vector_document(vec, doc);
                 match serialize_collection_to_string(found) {
                     Ok(vec) => return Ok(vec),
-                    Err(e) => return Err("Failed to stringify BSON documents to JSON.".to_string()),
+                    Err(_e) => return Err("Failed to stringify BSON documents to JSON.".to_string()),
                 }
             }
             Err(e) => return Err(e),
