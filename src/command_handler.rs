@@ -5,6 +5,7 @@ pub enum Command {
     INSERT,
     FIND,
     UPDATE,
+    CREATE, //For creating databases
 }
 
 //Los enums necesitan esto para poder hacer el .to_string()
@@ -14,6 +15,7 @@ impl fmt::Display for Command {
             Command::INSERT => write!(f, "INSERT"),
             Command::FIND => write!(f, "FIND"),
             Command::UPDATE => write!(f, "UPDATE"),
+            Command::CREATE => write!(f, "CREATE"),
         }
     }
 }
@@ -23,6 +25,7 @@ pub fn process_command(command: &str) -> Result<Command, String> {
         "find" => return Ok(Command::FIND),
         "insert" => return Ok(Command::INSERT),
         "update" => return Ok(Command::UPDATE),
+        "create" => return Ok(Command::CREATE),
         _ => return Err(String::from("Command doesnt exist")),
     }
 }

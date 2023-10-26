@@ -8,6 +8,11 @@ use bson::{from_reader, from_slice, Bson, Document};
 use serde_json::{Error, Value};
 
 pub async fn store_document(document: Document, mut vec: Vec<Document>) -> Result<String, String> {
+    //Si el documento esta vacio devolvemos un error
+    if document.is_empty() {
+        return Err("The document you're trying to insert is empty".to_string());
+    }
+    //Sino lo añadimos en el vector y lo serializamos
     vec.push(document);
 
     match serialize_collection(vec) {
@@ -102,8 +107,7 @@ fn bson_value_to_json_value(bson_value: &Bson) -> Result<Value, serde_json::Erro
     return serde_json::to_value(bson_value);
 }
 
-#[allow(dead_code)]
-fn serialize_document(document: Document) -> Result<Vec<u8>, String> {
+pub fn serialize_document(document: Document) -> Result<Vec<u8>, String> {
     let mut serialized_data: Vec<u8> = Vec::new();
     document
         .to_writer(&mut serialized_data)
@@ -112,8 +116,7 @@ fn serialize_document(document: Document) -> Result<Vec<u8>, String> {
     return Ok(serialized_data);
 }
 
-#[allow(dead_code)]
-fn deserialize_document(vec: Vec<u8>) -> Result<Document, String> {
+pub fn deserialize_document(vec: Vec<u8>) -> Result<Document, String> {
     let document = from_reader(&vec[..]).expect("Failed to deserialize BSON");
     return Ok(document);
 }
@@ -157,6 +160,11 @@ fn get_document_keys(doc: &Document) -> HashMap<String, Bson> {
 pub fn search_in_vector_document(vector: Vec<Document>, doc: Document) -> Vec<Document> {
     let document_hashmap = get_document_keys(&doc);
     let mut found_vector: Vec<Document> = Vec::new();
+
+    if document_hashmap.is_empty() {
+        //si esta vacia el documento entrante, devolvemos todos los documentos
+        return vector;
+    }
 
     for document in vector {
         for (key, value) in document_hashmap.iter() {

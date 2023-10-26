@@ -942,6 +942,7 @@ dependencies = [
  "bytes",
  "futures",
  "mini-redis",
+ "serde",
  "serde_json",
  "tokio",
  "tokio-util",
