@@ -14,6 +14,7 @@ use tokio::{
 use crate::orchestrator::load_orchestrator;
 mod bson_module;
 mod command_handler;
+mod database;
 mod orchestrator;
 
 #[tokio::main]
@@ -118,13 +119,14 @@ async fn handle_response(
     let response: String;
     //Para poder hacer el tema de Ok y Err, tenemos que llamar la funcion con match
     let database = data[0].to_string();
-    let content = data[1..data.len()].join("");
+    let collection = data[1].to_string();
+    let content = data[2..data.len()].join("");
     match command {
-        Command::INSERT => match handle_insert(database, content, orchestrator).await {
+        Command::INSERT => match handle_insert(database, collection, content, orchestrator).await {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
-        Command::FIND => match handle_find(database, content, orchestrator).await {
+        Command::FIND => match handle_find(database, collection, content, orchestrator).await {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
@@ -148,12 +150,13 @@ async fn handle_response(
 //Convertim el string entrant en un document, llegim la coleccio guardada e insertem el document en la coleccio
 async fn handle_insert(
     database: String,
+    collection: String,
     data: String,
     orchestrator: &mut Orchestrator,
 ) -> Result<String, String> {
     let document;
 
-    if !&orchestrator.database_exists(database) {
+    if !&orchestrator.database_exists(&database) {
         return Err("Database not recognized".to_string());
     }
 
@@ -162,8 +165,8 @@ async fn handle_insert(
         Err(e) => return Err(e),
     }
 
-    match bson_module::read_collection_deserialized().await {
-        Ok(vec) => match store_document(document, vec).await {
+    match bson_module::read_collection_deserialized(&database, &collection).await {
+        Ok(vec) => match store_document(document, vec, &database, &collection).await {
             Ok(res) => return Ok(res),
             Err(e) => return Err(e),
         },
@@ -177,15 +180,16 @@ fn handle_create(database: String, orchestrator: &mut Orchestrator) -> Result<St
 
 async fn handle_find(
     database: String,
+    collection: String,
     data: String,
     orchestrator: &mut Orchestrator,
 ) -> Result<String, String> {
-    if !&orchestrator.database_exists(database) {
+    if !&orchestrator.database_exists(&database) {
         return Err("Database not recognized".to_string());
     }
 
     match string_to_document(data) {
-        Ok(doc) => match read_collection_deserialized().await {
+        Ok(doc) => match read_collection_deserialized(&database, &collection).await {
             Ok(vec) => {
                 let found = search_in_vector_document(vec, doc);
                 match serialize_collection_to_string(found) {
@@ -206,7 +210,7 @@ async fn handle_update(
     _data: String,
     orchestrator: &mut Orchestrator,
 ) -> Result<String, String> {
-    if !&orchestrator.database_exists(database) {
+    if !&orchestrator.database_exists(&database) {
         return Err("Database not recognized".to_string());
     }
 

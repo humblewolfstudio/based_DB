@@ -5,6 +5,7 @@ use std::{
 };
 
 use crate::bson_module;
+use crate::database;
 
 //Le hacemos el Clone y el Copy para que pueda hacerse borrow
 #[derive(Serialize, Deserialize, Clone)]
@@ -15,7 +16,7 @@ pub struct Orchestrator {
 impl Orchestrator {
     pub fn new() -> Self {
         Orchestrator {
-            databases: vec!["test".to_string()],
+            databases: Vec::new(),
         }
     }
 
@@ -23,13 +24,16 @@ impl Orchestrator {
         &self.databases
     }
 
-    pub fn database_exists(&self, database_name: String) -> bool {
+    pub fn database_exists(&self, database_name: &String) -> bool {
         return self.databases.contains(&database_name);
     }
 
     pub fn create_database(&mut self, database_name: String) -> Result<String, String> {
-        self.databases.push(database_name);
-        return self.save_orchestrator();
+        self.databases.push(database_name.to_owned());
+        match database::create_database(&database_name) {
+            Ok(_ok) => return self.save_orchestrator(),
+            Err(err) => return Err(err),
+        }
     }
 
     pub fn save_orchestrator(&self) -> Result<String, String> {

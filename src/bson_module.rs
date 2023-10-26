@@ -2,12 +2,18 @@ use std::{
     collections::HashMap,
     fs::File,
     io::{Read, Write},
+    ops::Add,
 };
 
 use bson::{from_reader, from_slice, Bson, Document};
 use serde_json::{Error, Value};
 
-pub async fn store_document(document: Document, mut vec: Vec<Document>) -> Result<String, String> {
+pub async fn store_document(
+    document: Document,
+    mut vec: Vec<Document>,
+    database: &String,
+    collection: &String,
+) -> Result<String, String> {
     //Si el documento esta vacio devolvemos un error
     if document.is_empty() {
         return Err("The document you're trying to insert is empty".to_string());
@@ -16,16 +22,24 @@ pub async fn store_document(document: Document, mut vec: Vec<Document>) -> Resul
     vec.push(document);
 
     match serialize_collection(vec) {
-        Ok(serialized_data) => match store_collection(serialized_data).await {
-            Ok(res) => return Ok(res),
-            Err(e) => return Err(e),
-        },
+        Ok(serialized_data) => {
+            match store_collection(serialized_data, database, collection).await {
+                Ok(res) => return Ok(res),
+                Err(e) => return Err(e),
+            }
+        }
         Err(e) => return Err(e),
     }
 }
 
-pub async fn store_collection(vec: Vec<u8>) -> Result<String, String> {
-    match File::create("data.bson") {
+pub async fn store_collection(
+    vec: Vec<u8>,
+    database: &String,
+    collection: &String,
+) -> Result<String, String> {
+    //esto genera el archivo a leer (/data/{database}/{collection}.bson)
+    let file_name = database.to_string() + "/" + collection + ".bson";
+    match File::create("data/".to_string().add(&file_name)) {
         Ok(mut file) => {
             file.write_all(&vec).expect("Error writing to file");
             return Ok("OK".to_string());
@@ -34,8 +48,9 @@ pub async fn store_collection(vec: Vec<u8>) -> Result<String, String> {
     }
 }
 
-pub async fn read_collection() -> Result<Vec<u8>, String> {
-    match File::open("data.bson") {
+pub async fn read_collection(database: &String, collection: &String) -> Result<Vec<u8>, String> {
+    let file_name = database.to_string() + "/" + collection + ".bson";
+    match File::open("data/".to_string().add(&file_name)) {
         Ok(mut file) => {
             let mut buffer = Vec::new();
             match file.read_to_end(&mut buffer) {
@@ -43,12 +58,15 @@ pub async fn read_collection() -> Result<Vec<u8>, String> {
                 Err(_e) => return Err("Error reading file".to_string()),
             }
         }
-        Err(_e) => return Err("Error opening file".to_string()),
+        Err(_e) => return Ok(Vec::new()),
     }
 }
 
-pub async fn read_collection_deserialized() -> Result<Vec<Document>, String> {
-    match read_collection().await {
+pub async fn read_collection_deserialized(
+    database: &String,
+    collection: &String,
+) -> Result<Vec<Document>, String> {
+    match read_collection(database, collection).await {
         Ok(vec) => match deserialize_collection(vec) {
             Ok(data) => return Ok(data),
             Err(e) => return Err(e),
