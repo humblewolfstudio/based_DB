@@ -113,6 +113,13 @@ async fn handle_response(
     orchestrator: &mut Orchestrator,
 ) {
     println!("Received command: {:?}", command.to_string());
+    if data.len() == 0 {
+        return send_response(
+            socket,
+            "{Database} or {Database} {Collection} and {data} is missing".to_string(),
+        )
+        .await;
+    }
     //Si la variable solo se le asignara el valor una vez, no tiene porque ser mutable y no hace falta definirla
     //Si cambiara tiene que ser mut
     //Y si se usa antes de inicializarla, tiene que tener valor inicializado
@@ -121,7 +128,7 @@ async fn handle_response(
     let database = data[0].to_string();
     let collection;
     let content;
-    if data.len() > 2 {
+    if data.len() > 1 {
         collection = data[1].to_string();
         content = data[2..data.len()].join("");
     } else {
@@ -146,6 +153,10 @@ async fn handle_response(
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
     }
+    return send_response(socket, response).await;
+}
+
+async fn send_response(socket: &mut TcpStream, response: String) {
     println!("Sending: {:?}", response);
     let buf = response.into_bytes();
     socket
