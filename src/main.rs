@@ -119,8 +119,15 @@ async fn handle_response(
     let response: String;
     //Para poder hacer el tema de Ok y Err, tenemos que llamar la funcion con match
     let database = data[0].to_string();
-    let collection = data[1].to_string();
-    let content = data[2..data.len()].join("");
+    let collection;
+    let content;
+    if data.len() > 2 {
+        collection = data[1].to_string();
+        content = data[2..data.len()].join("");
+    } else {
+        collection = Default::default();
+        content = Default::default();
+    }
     match command {
         Command::INSERT => match handle_insert(database, collection, content, orchestrator).await {
             Ok(res) => response = res,
