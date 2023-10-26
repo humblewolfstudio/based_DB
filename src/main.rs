@@ -116,7 +116,7 @@ async fn handle_response(
     if data.len() == 0 {
         return send_response(
             socket,
-            "{Database} or {Database} {Collection} and {data} is missing".to_string(),
+            "ERROR: {Database} or {Database} {Collection} and {data} is missing".to_string(),
         )
         .await;
     }
