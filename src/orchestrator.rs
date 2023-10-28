@@ -21,6 +21,7 @@ struct User {
     username: String,
     hashed_pw: String,
     permissions: Vec<String>,
+    database: String,
 }
 
 impl User {
@@ -29,6 +30,7 @@ impl User {
             username,
             hashed_pw: password,
             permissions,
+            database: String::new(),
         }
     }
 }
