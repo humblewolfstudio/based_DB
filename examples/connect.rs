@@ -42,7 +42,7 @@ mod tcp {
     use bytes::Bytes;
     use futures::{future, Sink, SinkExt, Stream, StreamExt};
     use std::{error::Error, io, net::SocketAddr};
-    use tokio::net::TcpStream;
+    use tokio::{io::AsyncWriteExt, net::TcpStream};
     use tokio_util::codec::{BytesCodec, FramedRead, FramedWrite};
 
     pub async fn connect(
@@ -52,6 +52,8 @@ mod tcp {
     ) -> Result<(), Box<dyn Error>> {
         let mut stream = TcpStream::connect(addr).await?;
         println!("Connected to server");
+        let credentials = "supervisor:1234";
+        stream.write_all(credentials.as_bytes()).await?; //we send the credentials here
         let (r, w) = stream.split();
         let mut sink = FramedWrite::new(w, BytesCodec::new());
         // filter map Result<BytesMut, Error> stream into just a Bytes stream to match stdout Sink
@@ -59,13 +61,17 @@ mod tcp {
         let mut stream = FramedRead::new(r, BytesCodec::new())
             .filter_map(|i| match i {
                 //BytesMut into Bytes
-                Ok(i) => future::ready(Some(i.freeze())),
+                Ok(i) => {
+                    println!("Bytes: {:?}", i);
+                    future::ready(Some(i.freeze()))
+                }
                 Err(e) => {
-                    println!("failed to read from socket; error={}", e);
+                    println!("Failed to read from socket; error={}", e);
                     future::ready(None)
                 }
             })
-            .map(|response| { //Aportacion de CHATGPT
+            .map(|response| {
+                //Aportacion de CHATGPT
                 let response_with_newline = format!("{}\n", String::from_utf8_lossy(&response));
                 Bytes::from(response_with_newline)
             })

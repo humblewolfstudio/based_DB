@@ -35,14 +35,36 @@ async fn main() {
     println!("Listening on: {}", addr);
 
     loop {
-        let (socket, _) = listener.accept().await.unwrap();
+        let (mut socket, _) = listener.accept().await.unwrap();
 
         let orchestrator = (*orchestrator).clone();
         //Utilizamos spawn para procesarlas "concurrently" (no me se la traduccion ahora xd)
         //Nota 1: mas o menos seria procesarlas "a la vez" xd
         //Basicamente no bloquear el uso del servidor TCP, que pueda servir a varios usuarios a la vez
         tokio::spawn(async move {
-            process(socket, orchestrator).await;
+            //Getting URI
+            let mut buffer = [0; 1024];
+            let n = socket.read(&mut buffer).await.unwrap();
+            let initial_data = String::from_utf8(buffer[0..n].to_vec()).unwrap();
+            //Pasamos el username:password a variables
+            let mut split = initial_data.splitn(2, ':');
+            let username = split.next().unwrap_or("").trim().to_string();
+            let password = split.next().unwrap_or("").trim().to_string();
+            //autentificamos el usuario
+            match orchestrator.authenticate_user(&username, &password) {
+                Ok(_ok) => process(socket, orchestrator).await,
+                Err(error) => {
+                    handle_error(&mut socket, error).await;
+                    //println!("Closing connection");
+                    match socket.shutdown().await {
+                        Ok(_ok) => {
+                            //println!("Connection closed.");
+                            return;
+                        }
+                        Err(e) => return println!("ERROR: {:?}", e),
+                    }
+                }
+            }
         });
     }
 }
@@ -50,15 +72,12 @@ async fn main() {
 async fn process(mut socket: TcpStream, mut orchestrator: Orchestrator) {
     let mut buf = vec![0; 1024];
     println!("New connection");
+
     //si fem return, es "tanca" la conexio pero el front segueix conectat, per això hem de fer continue!!
     //Ponemos un bucle para leer de el socket y devolver la informacion
-    loop {
-        //Leemos el contenido del socket en buf y guardamos el length en n
-        let n = socket
-            .read(&mut buf)
-            .await
-            .expect("Failed to read data from socket");
 
+    //Leemos el contenido del socket en buf y guardamos el length en n
+    while let Ok(n) = socket.read(&mut buf).await {
         //si n esta vacia (no hay mensaje) hacemos return
         if n == 0 {
             continue;
@@ -94,6 +113,8 @@ async fn process(mut socket: TcpStream, mut orchestrator: Orchestrator) {
             }
         }
     }
+    //Si se desconecta, que devuelva y ya
+    return;
 }
 
 async fn handle_error(socket: &mut TcpStream, error: String) {
@@ -104,6 +125,7 @@ async fn handle_error(socket: &mut TcpStream, error: String) {
         .write_all(&buf[0..buf.len()])
         .await
         .expect("Failed to write error to socket");
+    return;
 }
 
 async fn handle_response(

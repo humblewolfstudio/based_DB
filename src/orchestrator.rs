@@ -1,23 +1,83 @@
 use serde::{Deserialize, Serialize};
 use std::{
+    error::Error,
     fs::File,
     io::{Read, Write},
 };
 
 use crate::bson_module;
 use crate::database;
+use crypto_hash::{hex_digest, Algorithm};
 
 //Le hacemos el Clone y el Copy para que pueda hacerse borrow
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Orchestrator {
-    databases: Vec<String>,
+    databases: Vec<String>, //Vec of databases
+    users: Vec<User>,       //Vec of users
+    secure: bool,           //boolean to use or not use users to authenticate
+}
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct User {
+    username: String,
+    hashed_pw: String,
+    permissions: Vec<String>,
+}
+
+impl User {
+    fn new(username: String, password: String, permissions: Vec<String>) -> Self {
+        User {
+            username,
+            hashed_pw: password,
+            permissions,
+        }
+    }
 }
 
 impl Orchestrator {
-    pub fn new() -> Self {
+    pub fn new(secure: bool) -> Self {
+        if !secure {
+            println!("ALERT!\n-------------------------------------------------
+            \nThe Orchestrator is in insecure mode. \nAnybody can connect to it. \nCreate a new user and change it to secure \n-------------------------------------------------");
+        } else {
+            println!("Orchestrator in secure mode.")
+        }
         Orchestrator {
             databases: Vec::new(),
+            users: vec![User::new(
+                //Supervisor is supervisor:1234
+                "supervisor".to_string(),
+                "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4".to_string(),
+                Vec::new(),
+            )],
+            secure,
         }
+    }
+
+    pub fn authenticate_user(
+        &self,
+        username: &String,
+        password: &String,
+    ) -> Result<Vec<String>, String> {
+        if &self.secure == &false {
+            let empty_vec: Vec<String> = Vec::new();
+            return Ok(empty_vec);
+        }
+        let hashed_pw;
+        match hash_string(password, Algorithm::SHA256) {
+            Ok(hashed_res) => hashed_pw = hashed_res,
+            Err(_e) => return Err("Error hashing the password".to_string()),
+        }
+
+        for user in &self.users {
+            if username == &user.username {
+                if hashed_pw != user.hashed_pw {
+                    return Err("Couldn't authenticate: Incorrect Password".to_string());
+                }
+                return Ok(user.permissions.clone());
+            }
+        }
+
+        return Err("Couldn't authenticate: User not found".to_string());
     }
 
     pub fn get_databases(&self) -> &Vec<String> {
@@ -50,21 +110,21 @@ pub fn load_orchestrator() -> Result<Orchestrator, String> {
 
     match read_file() {
         Ok(doc) => vec = doc,
-        Err(_e) => return Ok(Orchestrator::new()),
+        Err(_e) => return Ok(Orchestrator::new(true)), //TODO is secure because of this
     }
 
     if vec.is_empty() {
-        return Ok(Orchestrator::new());
+        return Ok(Orchestrator::new(false));
     }
 
     match bson_module::deserialize_document(vec) {
         Ok(data) => document = data,
-        Err(_e) => return Ok(Orchestrator::new()),
+        Err(_e) => return Ok(Orchestrator::new(false)),
     }
 
     match bson::from_document::<Orchestrator>(document) {
         Ok(data) => return Ok(data),
-        Err(_e) => return Ok(Orchestrator::new()),
+        Err(_e) => return Ok(Orchestrator::new(false)),
     }
 }
 
@@ -109,4 +169,9 @@ fn read_file() -> Result<Vec<u8>, String> {
         }
         Err(_e) => return Err("Error opening file".to_string()),
     }
+}
+
+fn hash_string(input: &str, algorithm: Algorithm) -> Result<String, Box<dyn Error>> {
+    let hash = hex_digest(algorithm, input.as_bytes());
+    Ok(hash)
 }
