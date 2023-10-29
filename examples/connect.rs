@@ -61,10 +61,7 @@ mod tcp {
         let mut stream = FramedRead::new(r, BytesCodec::new())
             .filter_map(|i| match i {
                 //BytesMut into Bytes
-                Ok(i) => {
-                    println!("Bytes: {:?}", i);
-                    future::ready(Some(i.freeze()))
-                }
+                Ok(i) => future::ready(Some(i.freeze())),
                 Err(e) => {
                     println!("Failed to read from socket; error={}", e);
                     future::ready(None)

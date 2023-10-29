@@ -1,9 +1,5 @@
 use std::{ops::Add, sync::Arc};
 
-use bson_module::{
-    read_collection_deserialized, search_in_vector_document, serialize_collection_to_string,
-    store_document, string_to_document,
-};
 use command_handler::Command;
 use orchestrator::Orchestrator;
 use tokio::{
@@ -11,10 +7,16 @@ use tokio::{
     net::{TcpListener, TcpStream},
 };
 
+use crate::handlers::{
+    create::handle_create, find::handle_find, insert::handle_insert, peek::handle_peek,
+    update::handle_update,
+};
 use crate::orchestrator::load_orchestrator;
+
 mod bson_module;
 mod command_handler;
 mod database;
+mod handlers;
 mod orchestrator;
 
 #[tokio::main]
@@ -135,6 +137,7 @@ async fn handle_response(
     orchestrator: &mut Orchestrator,
 ) {
     println!("Received command: {:?}", command.to_string());
+    /*
     if data.len() == 0 {
         return send_response(
             socket,
@@ -142,18 +145,25 @@ async fn handle_response(
         )
         .await;
     }
+    */
     //Si la variable solo se le asignara el valor una vez, no tiene porque ser mutable y no hace falta definirla
     //Si cambiara tiene que ser mut
     //Y si se usa antes de inicializarla, tiene que tener valor inicializado
     let response: String;
     //Para poder hacer el tema de Ok y Err, tenemos que llamar la funcion con match
-    let database = data[0].to_string();
+    let database;
     let collection;
     let content;
-    if data.len() > 1 {
+    if data.len() > 0 {
+        database = data[0].to_string();
+        collection = Default::default();
+        content = Default::default();
+    } else if data.len() > 1 {
+        database = data[0].to_string();
         collection = data[1].to_string();
         content = data[2..data.len()].join("");
     } else {
+        database = Default::default();
         collection = Default::default();
         content = Default::default();
     }
@@ -174,6 +184,7 @@ async fn handle_response(
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
+        Command::PEEK => response = handle_peek(orchestrator),
     }
     return send_response(socket, response).await;
 }
@@ -185,74 +196,4 @@ async fn send_response(socket: &mut TcpStream, response: String) {
         .write_all(&buf[0..buf.len()])
         .await
         .expect("Failed to write response to socket");
-}
-
-//Convertim el string entrant en un document, llegim la coleccio guardada e insertem el document en la coleccio
-async fn handle_insert(
-    database: String,
-    collection: String,
-    data: String,
-    orchestrator: &mut Orchestrator,
-) -> Result<String, String> {
-    let document;
-
-    if !&orchestrator.database_exists(&database) {
-        return Err("Database not recognized".to_string());
-    }
-
-    match bson_module::string_to_document(data) {
-        Ok(res) => document = res,
-        Err(e) => return Err(e),
-    }
-
-    match bson_module::read_collection_deserialized(&database, &collection).await {
-        Ok(vec) => match store_document(document, vec, &database, &collection).await {
-            Ok(res) => return Ok(res),
-            Err(e) => return Err(e),
-        },
-        Err(e) => return Err(e),
-    }
-}
-
-fn handle_create(database: String, orchestrator: &mut Orchestrator) -> Result<String, String> {
-    return orchestrator.create_database(database);
-}
-
-async fn handle_find(
-    database: String,
-    collection: String,
-    data: String,
-    orchestrator: &mut Orchestrator,
-) -> Result<String, String> {
-    if !&orchestrator.database_exists(&database) {
-        return Err("Database not recognized".to_string());
-    }
-
-    match string_to_document(data) {
-        Ok(doc) => match read_collection_deserialized(&database, &collection).await {
-            Ok(vec) => {
-                let found = search_in_vector_document(vec, doc);
-                match serialize_collection_to_string(found) {
-                    Ok(vec) => return Ok(vec),
-                    Err(_e) => {
-                        return Err("Failed to stringify BSON documents to JSON.".to_string())
-                    }
-                }
-            }
-            Err(e) => return Err(e),
-        },
-        Err(e) => return Err(e),
-    };
-}
-
-async fn handle_update(
-    database: String,
-    _data: String,
-    orchestrator: &mut Orchestrator,
-) -> Result<String, String> {
-    if !&orchestrator.database_exists(&database) {
-        return Err("Database not recognized".to_string());
-    }
-
-    return Err("Unimplemented".to_string());
 }

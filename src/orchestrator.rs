@@ -10,7 +10,7 @@ use crate::database;
 use crypto_hash::{hex_digest, Algorithm};
 
 //Le hacemos el Clone y el Copy para que pueda hacerse borrow
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Orchestrator {
     databases: Vec<String>, //Vec of databases
     users: Vec<User>,       //Vec of users
@@ -91,9 +91,11 @@ impl Orchestrator {
     }
 
     pub fn create_database(&mut self, database_name: String) -> Result<String, String> {
-        self.databases.push(database_name.to_owned());
         match database::create_database(&database_name) {
-            Ok(_ok) => return self.save_orchestrator(),
+            Ok(_ok) => {
+                self.databases.push(database_name.to_owned());
+                return self.save_orchestrator();
+            }
             Err(err) => return Err(err),
         }
     }
@@ -125,7 +127,9 @@ pub fn load_orchestrator() -> Result<Orchestrator, String> {
     }
 
     match bson::from_document::<Orchestrator>(document) {
-        Ok(data) => return Ok(data),
+        Ok(data) => {
+            return Ok(data);
+        }
         Err(_e) => return Ok(Orchestrator::new(false)),
     }
 }
