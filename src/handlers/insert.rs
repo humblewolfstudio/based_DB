@@ -1,14 +1,13 @@
+use tcp_server::get_data;
+
 use crate::{bson_module, bson_module::store_document, orchestrator::Orchestrator};
 
 //Convertim el string entrant en un document, llegim la coleccio guardada e insertem el document en la coleccio
 pub async fn handle_insert(
-    database: String,
-    collection: String,
-    data: String,
+    message: &Vec<&str>,
     orchestrator: &mut Orchestrator,
 ) -> Result<String, String> {
-    let document;
-
+    let (database, collection, data) = get_data(message.to_vec());
     //We check if db, collection and data are present. If not, we return an error
     if database.eq("") {
         return Err("No database sent.".to_string());
@@ -21,6 +20,8 @@ pub async fn handle_insert(
     if data.eq("") {
         return Err("No document sent.".to_string());
     }
+
+    let document;
 
     if !&orchestrator.database_exists(&database) {
         return Err("Database not recognized".to_string());

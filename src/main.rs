@@ -1,7 +1,8 @@
 use std::{ops::Add, sync::Arc};
 
 use command_handler::Command;
-use orchestrator::Orchestrator;
+use orchestrator::{Orchestrator, User};
+use tcp_server::get_data;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
@@ -54,7 +55,7 @@ async fn main() {
             let password = split.next().unwrap_or("").trim().to_string();
             //autentificamos el usuario
             match orchestrator.authenticate_user(&username, &password) {
-                Ok(_ok) => process(socket, orchestrator).await,
+                Ok(user) => process(socket, orchestrator, user).await,
                 Err(error) => {
                     handle_error(&mut socket, error).await;
                     //println!("Closing connection");
@@ -71,7 +72,7 @@ async fn main() {
     }
 }
 
-async fn process(mut socket: TcpStream, mut orchestrator: Orchestrator) {
+async fn process(mut socket: TcpStream, mut orchestrator: Orchestrator, user: User) {
     let mut buf = vec![0; 1024];
     println!("New connection");
 
@@ -107,7 +108,14 @@ async fn process(mut socket: TcpStream, mut orchestrator: Orchestrator) {
         //como su propiedad!!!
         match command_handler::process_command(message_array[0]) {
             Ok(command) => {
-                handle_response(&mut socket, command, data.to_owned(), &mut orchestrator).await
+                handle_response(
+                    &mut socket,
+                    command,
+                    data.to_owned(),
+                    &mut orchestrator,
+                    &user,
+                )
+                .await
             }
             Err(e) => {
                 //le pasamos &mut socket porque es como lo necesita (xd)
@@ -135,6 +143,7 @@ async fn handle_response(
     command: Command,
     data: Vec<&str>,
     orchestrator: &mut Orchestrator,
+    _user: &User,
 ) {
     println!("Received command: {:?}", command.to_string());
     //Si la variable solo se le asignara el valor una vez, no tiene porque ser mutable y no hace falta definirla
@@ -142,22 +151,22 @@ async fn handle_response(
     //Y si se usa antes de inicializarla, tiene que tener valor inicializado
     let response: String;
     //Para poder hacer el tema de Ok y Err, tenemos que llamar la funcion con match
-    let (database, collection, content) = get_data(data);
+    //let (database, collection, content) = get_data(data);
 
     match command {
-        Command::INSERT => match handle_insert(database, collection, content, orchestrator).await {
+        Command::INSERT => match handle_insert(&data, orchestrator).await {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
-        Command::FIND => match handle_find(database, collection, content, orchestrator).await {
+        Command::FIND => match handle_find(&data, orchestrator).await {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
-        Command::UPDATE => match handle_update(database, content, orchestrator).await {
+        Command::UPDATE => match handle_update(&data, orchestrator).await {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
-        Command::CREATE => match handle_create(database, orchestrator) {
+        Command::CREATE => match handle_create(&data, orchestrator) {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
@@ -173,32 +182,4 @@ async fn send_response(socket: &mut TcpStream, response: String) {
         .write_all(&buf[0..buf.len()])
         .await
         .expect("Failed to write response to socket");
-}
-
-fn get_data(data: Vec<&str>) -> (String, String, String) {
-    let database;
-    let collection;
-    let content;
-
-    let len = data.len();
-
-    if len <= 0 {
-        database = String::new();
-        collection = String::new();
-        content = String::new();
-    } else if len < 2 {
-        database = data[0].to_string();
-        collection = String::new();
-        content = String::new();
-    } else if len >= 2 {
-        database = data[0].to_string();
-        collection = data[1].to_string();
-        content = data[2..data.len()].join("");
-    } else {
-        database = String::new();
-        collection = String::new();
-        content = String::new();
-    }
-
-    return (database, collection, content);
 }

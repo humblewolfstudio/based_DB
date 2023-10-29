@@ -17,7 +17,7 @@ pub struct Orchestrator {
     secure: bool,           //boolean to use or not use users to authenticate
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct User {
+pub struct User {
     username: String,
     hashed_pw: String,
     permissions: Vec<String>,
@@ -55,14 +55,9 @@ impl Orchestrator {
         }
     }
 
-    pub fn authenticate_user(
-        &self,
-        username: &String,
-        password: &String,
-    ) -> Result<Vec<String>, String> {
+    pub fn authenticate_user(&self, username: &String, password: &String) -> Result<User, String> {
         if &self.secure == &false {
-            let empty_vec: Vec<String> = Vec::new();
-            return Ok(empty_vec);
+            return Ok(self.users.get(0).unwrap().clone());
         }
         let hashed_pw;
         match hash_string(password, Algorithm::SHA256) {
@@ -75,11 +70,39 @@ impl Orchestrator {
                 if hashed_pw != user.hashed_pw {
                     return Err("Couldn't authenticate: Incorrect Password".to_string());
                 }
-                return Ok(user.permissions.clone());
+                return Ok(user.clone());
             }
         }
 
         return Err("Couldn't authenticate: User not found".to_string());
+    }
+
+    pub fn create_user(
+        &mut self,
+        username: String,
+        password: &String,
+        database: String,
+    ) -> Result<String, String> {
+        let hashed_pw;
+        match hash_string(password, Algorithm::SHA256) {
+            Ok(hashed_res) => hashed_pw = hashed_res,
+            Err(_e) => return Err("Error hashing the password".to_string()),
+        }
+
+        for user in &self.users {
+            if username.eq(&user.username) {
+                return Err("User with same name already exists".to_string());
+            }
+        }
+
+        self.users.push(User {
+            username,
+            hashed_pw,
+            permissions: Vec::new(),
+            database,
+        });
+
+        return Ok("OK".to_string());
     }
 
     pub fn get_databases(&self) -> &Vec<String> {
