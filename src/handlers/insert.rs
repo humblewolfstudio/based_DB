@@ -9,6 +9,19 @@ pub async fn handle_insert(
 ) -> Result<String, String> {
     let document;
 
+    //We check if db, collection and data are present. If not, we return an error
+    if database.eq("") {
+        return Err("No database sent.".to_string());
+    }
+
+    if collection.eq("") {
+        return Err("No collection sent.".to_string());
+    }
+
+    if data.eq("") {
+        return Err("No document sent.".to_string());
+    }
+
     if !&orchestrator.database_exists(&database) {
         return Err("Database not recognized".to_string());
     }

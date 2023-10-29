@@ -137,36 +137,13 @@ async fn handle_response(
     orchestrator: &mut Orchestrator,
 ) {
     println!("Received command: {:?}", command.to_string());
-    /*
-    if data.len() == 0 {
-        return send_response(
-            socket,
-            "ERROR: {Database} or {Database} {Collection} and {data} is missing".to_string(),
-        )
-        .await;
-    }
-    */
     //Si la variable solo se le asignara el valor una vez, no tiene porque ser mutable y no hace falta definirla
     //Si cambiara tiene que ser mut
     //Y si se usa antes de inicializarla, tiene que tener valor inicializado
     let response: String;
     //Para poder hacer el tema de Ok y Err, tenemos que llamar la funcion con match
-    let database;
-    let collection;
-    let content;
-    if data.len() > 0 {
-        database = data[0].to_string();
-        collection = Default::default();
-        content = Default::default();
-    } else if data.len() > 1 {
-        database = data[0].to_string();
-        collection = data[1].to_string();
-        content = data[2..data.len()].join("");
-    } else {
-        database = Default::default();
-        collection = Default::default();
-        content = Default::default();
-    }
+    let (database, collection, content) = get_data(data);
+
     match command {
         Command::INSERT => match handle_insert(database, collection, content, orchestrator).await {
             Ok(res) => response = res,
@@ -196,4 +173,32 @@ async fn send_response(socket: &mut TcpStream, response: String) {
         .write_all(&buf[0..buf.len()])
         .await
         .expect("Failed to write response to socket");
+}
+
+fn get_data(data: Vec<&str>) -> (String, String, String) {
+    let database;
+    let collection;
+    let content;
+
+    let len = data.len();
+
+    if len <= 0 {
+        database = String::new();
+        collection = String::new();
+        content = String::new();
+    } else if len < 2 {
+        database = data[0].to_string();
+        collection = String::new();
+        content = String::new();
+    } else if len >= 2 {
+        database = data[0].to_string();
+        collection = data[1].to_string();
+        content = data[2..data.len()].join("");
+    } else {
+        database = String::new();
+        collection = String::new();
+        content = String::new();
+    }
+
+    return (database, collection, content);
 }
