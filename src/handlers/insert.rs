@@ -7,7 +7,7 @@ pub async fn handle_insert(
     message: &Vec<&str>,
     orchestrator: &mut Orchestrator,
 ) -> Result<String, String> {
-    let (database, collection, data) = get_data(message.to_vec());
+    let (database, collection, data) = get_data(message.to_vec(), orchestrator);
     //We check if db, collection and data are present. If not, we return an error
     if database.eq("") {
         return Err("No database sent.".to_string());

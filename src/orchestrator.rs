@@ -1,20 +1,20 @@
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
-    fs::File,
-    io::{Read, Write},
+    fs::{File, self},
+    io::{Read, Write}, ops::Add,
 };
 
-use crate::bson_module;
-use crate::database;
 use crypto_hash::{hex_digest, Algorithm};
+
+use bson_module; //TODO arreglar esta pñuta mierda ?? no entiendo que le pasas y porque no deja importar el crate
 
 //Le hacemos el Clone y el Copy para que pueda hacerse borrow
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Orchestrator {
-    databases: Vec<String>, //Vec of databases
-    users: Vec<User>,       //Vec of users
-    secure: bool,           //boolean to use or not use users to authenticate
+    databases: Vec<Database>, //Vec of databases
+    users: Vec<User>,         //Vec of users
+    secure: bool,             //boolean to use or not use users to authenticate
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct User {
@@ -22,6 +22,15 @@ pub struct User {
     hashed_pw: String,
     permissions: Vec<String>,
     database: String,
+}
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Database {
+    name: String,
+    collections: Vec<Collection>,
+}
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Collection {
+    name: String,
 }
 
 impl User {
@@ -105,18 +114,22 @@ impl Orchestrator {
         return Ok("OK".to_string());
     }
 
-    pub fn get_databases(&self) -> &Vec<String> {
-        &self.databases
+    pub fn get_databases(&self) -> Vec<Database> {
+        self.databases.clone()
+    }
+
+    pub fn get_database(&self, name: &str) -> &Database {
+        self.databases.iter().find(|db| db.name.eq(name)).unwrap()
     }
 
     pub fn database_exists(&self, database_name: &String) -> bool {
-        return self.databases.contains(&database_name);
+        self.databases.iter().any(|db| db.name.eq(database_name))
     }
 
     pub fn create_database(&mut self, database_name: String) -> Result<String, String> {
-        match database::create_database(&database_name) {
+        match create_database(&database_name) {
             Ok(_ok) => {
-                self.databases.push(database_name.to_owned());
+                self.databases.push(Database::new(database_name));
                 return self.save_orchestrator();
             }
             Err(err) => return Err(err),
@@ -128,6 +141,51 @@ impl Orchestrator {
             Ok(res) => return Ok(res),
             Err(e) => return Err(e),
         }
+    }
+}
+
+impl Database {
+    pub fn new(name: String) -> Self {
+        Database {
+            name: name,
+            collections: Vec::new(),
+        }
+    }
+
+    pub fn add_collection(&mut self, collection: Collection) -> bool {
+        self.collections.push(collection);
+        return true;
+    }
+
+    pub fn remove_collection(&mut self, collection_name: &String) -> bool {
+        let removed = self
+            .collections
+            .iter()
+            .position(|coll| coll.name == *collection_name);
+        if let Some(index) = removed {
+            self.collections.remove(index);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn get_collections(&self) -> Vec<Collection> {
+        self.collections.clone()
+    }
+
+    pub fn get_name(&self) -> String {
+        self.name.to_string()
+    }
+}
+
+impl Collection {
+    pub fn new(name: String) -> Self {
+        Collection { name: name }
+    }
+
+    pub fn get_name(&self) -> String {
+        self.name.to_string()
     }
 }
 
@@ -203,4 +261,20 @@ fn read_file() -> Result<Vec<u8>, String> {
 fn hash_string(input: &str, algorithm: Algorithm) -> Result<String, Box<dyn Error>> {
     let hash = hex_digest(algorithm, input.as_bytes());
     Ok(hash)
+}
+
+pub fn create_database(database_name: &String) -> Result<String, String> {
+    if database_name.eq("") {
+        return Err("Database Name cant be an empty string".to_string());
+    }
+    let dir_name = database_name.to_string();
+    match fs::create_dir_all("./data/".to_string().add(&dir_name)) {
+        Ok(_file) => {
+            return Ok("OK".to_string());
+        }
+        Err(_e) => {
+            println!("ERROR: {:?}", _e);
+            return Err("Error creating directory".to_string());
+        }
+    }
 }

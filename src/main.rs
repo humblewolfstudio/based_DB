@@ -16,7 +16,6 @@ use crate::orchestrator::load_orchestrator;
 
 mod bson_module;
 mod command_handler;
-mod database;
 mod handlers;
 mod orchestrator;
 
@@ -170,7 +169,7 @@ async fn handle_response(
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
-        Command::PEEK => response = handle_peek(orchestrator),
+        Command::PEEK => response = handle_peek(&data, orchestrator),
     }
     return send_response(socket, response).await;
 }
