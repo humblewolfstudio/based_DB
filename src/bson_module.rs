@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    fs::File,
+    fs::{remove_file, File},
     io::{Read, Write},
     ops::Add,
 };
@@ -59,6 +59,17 @@ pub async fn read_collection(database: &String, collection: &String) -> Result<V
             }
         }
         Err(_e) => return Ok(Vec::new()),
+    }
+}
+
+pub async fn delete_collection(database: &String, collection: &String) -> Result<String, String> {
+    let file_name = "data/".to_string() + database + "/" + collection + ".bson";
+    match remove_file(file_name) {
+        Ok(_) => return Ok("OK".to_string()),
+        Err(e) => {
+            eprintln!("Error deleting file: {}", e);
+            return Err("Error deleting collection".to_string());
+        } //TODO we should log all the errors
     }
 }
 

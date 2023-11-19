@@ -14,16 +14,24 @@ pub async fn handle_find(
 ) -> Result<String, String> {
     let (database_name, collection_name, data) = get_data(message.to_vec());
 
+    if database_name.is_empty() {
+        return Err("Database not sent.".to_string());
+    }
+
+    if collection_name.is_empty() {
+        return Err("Collection not sent.".to_string());
+    }
+
+    if data.is_empty() {
+        return Err("No document sent.".to_string());
+    }
+
     if let Some(database) = orchestrator.get_database(&database_name) {
-        if database.collection_exists(&collection_name) {
-            return Err("No collection sent.".to_string());
+        if !database.collection_exists(&collection_name) {
+            return Err("Collection doesnt exists".to_string());
         }
 
         let _collection = database.get_collection(&collection_name);
-
-        if data.eq("") {
-            return Err("No document sent.".to_string());
-        }
 
         match string_to_document(data) {
             Ok(doc) => match read_collection_deserialized(&database_name, &collection_name).await {

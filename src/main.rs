@@ -2,17 +2,18 @@ use orchestrator::{load_orchestrator, Orchestrator, User};
 
 use std::{ops::Add, sync::Arc};
 
-use command_handler::Command;
-
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
 };
 
-use crate::handlers::{handle_create, handle_find, handle_insert, handle_peek, handle_update};
+use handlers::{
+    command_handler, handle_create, handle_find, handle_insert, handle_peek, handle_update, Command,
+};
+
+use crate::handlers::handle_delete;
 
 mod bson_module;
-mod command_handler;
 mod handlers;
 mod orchestrator;
 
@@ -166,6 +167,10 @@ async fn handle_response(
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
         Command::CREATE => match handle_create(&data, orchestrator) {
+            Ok(res) => response = res,
+            Err(e) => response = "ERROR: ".to_owned().add(&e),
+        },
+        Command::DELETE => match handle_delete(&data, orchestrator).await {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
