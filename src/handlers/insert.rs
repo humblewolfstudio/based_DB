@@ -11,17 +11,17 @@ pub async fn handle_insert(
     //We check if db, collection and data are present. If not, we return an error
 
     if let Some(mut database) = orchestrator.get_database(&database_name) {
-        if collection_name.eq("") {
+        if collection_name.is_empty() {
             return Err("You have to send a collection name".to_string());
         }
-        println!("{:?}", database.get_collections());
+
         if !database.collection_exists(&collection_name) {
-            println!("dentro xd");
             //Si no existe la coleccion, que se añada en el coso ese
             database.add_collection(&collection_name);
+            orchestrator.save_orchestrator();
         }
 
-        if data.eq("") {
+        if data.is_empty() {
             return Err("No document sent.".to_string());
         }
 
