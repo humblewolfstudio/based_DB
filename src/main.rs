@@ -9,10 +9,7 @@ use tokio::{
     net::{TcpListener, TcpStream},
 };
 
-use crate::handlers::{
-    create::handle_create, find::handle_find, insert::handle_insert, peek::handle_peek,
-    update::handle_update,
-};
+use crate::handlers::{handle_create, handle_find, handle_insert, handle_peek, handle_update};
 
 mod bson_module;
 mod command_handler;

@@ -1,4 +1,4 @@
-use super::aux_fn::get_data;
+use super::get_data;
 
 use crate::{bson_module, bson_module::store_document, orchestrator::orchestrator::Orchestrator};
 
@@ -10,7 +10,7 @@ pub async fn handle_insert(
     let (database_name, collection_name, data) = get_data(message.to_vec());
     //We check if db, collection and data are present. If not, we return an error
 
-    if let Some(mut database) = orchestrator.get_database(&database_name) {
+    if let Some(database) = orchestrator.get_database(&database_name) {
         if collection_name.is_empty() {
             return Err("You have to send a collection name".to_string());
         }
@@ -18,7 +18,7 @@ pub async fn handle_insert(
         if !database.collection_exists(&collection_name) {
             //Si no existe la coleccion, que se añada en el coso ese
             database.add_collection(&collection_name);
-            orchestrator.save_orchestrator();
+            let _ = orchestrator.save_orchestrator();
         }
 
         if data.is_empty() {

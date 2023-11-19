@@ -1,4 +1,4 @@
-use super::aux_fn::get_data;
+use super::get_data;
 
 use crate::{
     bson_module::{
@@ -14,7 +14,7 @@ pub async fn handle_find(
 ) -> Result<String, String> {
     let (database_name, collection_name, data) = get_data(message.to_vec());
 
-    if let Some(mut database) = orchestrator.get_database(&database_name) {
+    if let Some(database) = orchestrator.get_database(&database_name) {
         if database.collection_exists(&collection_name) {
             return Err("No collection sent.".to_string());
         }
