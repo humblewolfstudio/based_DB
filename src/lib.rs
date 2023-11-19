@@ -1,27 +1,34 @@
-use orchestrator::{Database, Orchestrator};
+pub mod orchestrator_handler;
 
-mod orchestrator;
-pub fn get_data(data: Vec<&str>, orchestrator: &Orchestrator) -> (Database, String, String) {
+pub use orchestrator_handler::{Collection, Database, Orchestrator};
+
+mod bson_module;
+
+pub fn get_data(data: Vec<&str>) -> (String, String, String) {
     let database;
     let collection;
     let content;
-
+    
     let len = data.len();
 
     if len <= 0 {
-        database = Database::new(String::new());
+        database = String::new();
         collection = String::new();
         content = String::new();
-    } else if len < 2 {
-        database = orchestrator.get_database(data[0]).to_owned();
+    } else if len == 1 {
+        database = data[0].to_string();
         collection = String::new();
+        content = String::new();
+    } else if len == 2 {
+        database = data[0].to_string();
+        collection = data[1].to_string();
         content = String::new();
     } else if len >= 2 {
-        database = orchestrator.get_database(data[0]).to_owned();
+        database = data[0].to_string();
         collection = data[1].to_string();
         content = data[2..data.len()].join("");
     } else {
-        database = Database::new(String::new());
+        database = String::new();
         collection = String::new();
         content = String::new();
     }

@@ -1,4 +1,4 @@
-use crate::orchestrator::Orchestrator;
+use crate::orchestrator_handler::Orchestrator;
 
 pub fn handle_peek(message: &Vec<&str>, orchestrator: &mut Orchestrator) -> String {
     if message.len() < 1 {
@@ -12,7 +12,10 @@ pub fn handle_peek(message: &Vec<&str>, orchestrator: &mut Orchestrator) -> Stri
                 .join(", ")
         );
     } else {
-        print!("message: {}", message[0]);
+        println!(
+            "message: {:?}",
+            orchestrator.get_database(message[0]).get_collections()
+        );
         return format!(
             "[{}]",
             orchestrator

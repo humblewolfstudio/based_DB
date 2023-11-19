@@ -5,33 +5,33 @@ use crate::{
         read_collection_deserialized, search_in_vector_document, serialize_collection_to_string,
         string_to_document,
     },
-    orchestrator::Orchestrator,
+    orchestrator_handler::Orchestrator,
 };
 
 pub async fn handle_find(
     message: &Vec<&str>,
     orchestrator: &mut Orchestrator,
 ) -> Result<String, String> {
-    let (database, collection, data) = get_data(message.to_vec());
+    let (database_name, collection_name, data) = get_data(message.to_vec());
 
-    if database.eq("") {
+    if orchestrator.database_exists(&database_name) {
         return Err("No database sent.".to_string());
     }
 
-    if collection.eq("") {
+    let database = orchestrator.get_database(&database_name);
+
+    if database.collection_exists(&collection_name) {
         return Err("No collection sent.".to_string());
     }
+
+    let _collection = database.get_collection(&collection_name);
 
     if data.eq("") {
         return Err("No document sent.".to_string());
     }
 
-    if !&orchestrator.database_exists(&database) {
-        return Err("Database not recognized".to_string());
-    }
-
     match string_to_document(data) {
-        Ok(doc) => match read_collection_deserialized(&database, &collection).await {
+        Ok(doc) => match read_collection_deserialized(&database_name, &collection_name).await {
             Ok(vec) => {
                 let found = search_in_vector_document(vec, doc);
                 match serialize_collection_to_string(found) {

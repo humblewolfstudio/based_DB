@@ -1,8 +1,10 @@
+use orchestrator_handler::{load_orchestrator, Orchestrator, User};
+use tcp_server::orchestrator_handler;
+
 use std::{ops::Add, sync::Arc};
 
 use command_handler::Command;
-use orchestrator::{Orchestrator, User};
-use tcp_server::get_data;
+
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
@@ -12,12 +14,10 @@ use crate::handlers::{
     create::handle_create, find::handle_find, insert::handle_insert, peek::handle_peek,
     update::handle_update,
 };
-use crate::orchestrator::load_orchestrator;
 
 mod bson_module;
 mod command_handler;
 mod handlers;
-mod orchestrator;
 
 #[tokio::main]
 async fn main() {
@@ -27,7 +27,10 @@ async fn main() {
     let orchestrator;
 
     match load_orchestrator() {
-        Ok(data) => orchestrator = Arc::new(data),
+        Ok(data) => {
+            println!("Orch: {:?}", data);
+            orchestrator = Arc::new(data);
+        }
         Err(_e) => {
             println!("ERROR: There's been an error reading the Orchestrator");
             return;

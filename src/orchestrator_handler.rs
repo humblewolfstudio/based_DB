@@ -1,13 +1,16 @@
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
-    fs::{File, self},
-    io::{Read, Write}, ops::Add,
+    fs::{self, File},
+    io::{Read, Write},
+    ops::Add,
 };
 
 use crypto_hash::{hex_digest, Algorithm};
 
-use bson_module; //TODO arreglar esta pñuta mierda ?? no entiendo que le pasas y porque no deja importar el crate
+use bson_module::{deserialize_document, serialize_document};
+
+use crate::bson_module;
 
 //Le hacemos el Clone y el Copy para que pueda hacerse borrow
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -118,8 +121,13 @@ impl Orchestrator {
         self.databases.clone()
     }
 
-    pub fn get_database(&self, name: &str) -> &Database {
-        self.databases.iter().find(|db| db.name.eq(name)).unwrap()
+    pub fn get_database(&mut self, name: &str) -> Option<&mut Database> {
+        if let Some(index) = self.databases.iter().position(|db| db.name == name) {
+            Some(&mut self.databases[index])
+        } else {
+            // Database not found, you may choose to return None or handle it differently
+            None
+        }
     }
 
     pub fn database_exists(&self, database_name: &String) -> bool {
@@ -152,8 +160,9 @@ impl Database {
         }
     }
 
-    pub fn add_collection(&mut self, collection: Collection) -> bool {
-        self.collections.push(collection);
+    pub fn add_collection(&mut self, collection_name: &String) -> bool {
+        self.collections
+            .push(Collection::new(collection_name.to_string()));
         return true;
     }
 
@@ -172,6 +181,18 @@ impl Database {
 
     pub fn get_collections(&self) -> Vec<Collection> {
         self.collections.clone()
+    }
+
+    pub fn get_collection(&self, name: &str) -> Collection {
+        self.collections
+            .iter()
+            .find(|coll| coll.get_name().eq(name))
+            .cloned()
+            .unwrap_or_else(|| Collection::new(String::new()))
+    }
+
+    pub fn collection_exists(&self, database_name: &String) -> bool {
+        self.collections.iter().any(|db| db.name.eq(database_name))
     }
 
     pub fn get_name(&self) -> String {
@@ -202,7 +223,7 @@ pub fn load_orchestrator() -> Result<Orchestrator, String> {
         return Ok(Orchestrator::new(false));
     }
 
-    match bson_module::deserialize_document(vec) {
+    match deserialize_document(vec) {
         Ok(data) => document = data,
         Err(_e) => return Ok(Orchestrator::new(false)),
     }
@@ -224,7 +245,7 @@ pub fn store_orchestrator(orchestrator: Orchestrator) -> Result<String, String> 
         Err(e) => return Err(e.to_string()),
     }
 
-    match bson_module::serialize_document(document) {
+    match serialize_document(document) {
         Ok(data) => vec = data,
         Err(e) => return Err(e),
     }
