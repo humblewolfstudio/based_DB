@@ -1,4 +1,10 @@
-use crate::{bson_module::delete_collection, orchestrator::Orchestrator};
+use crate::{
+    bson_module::{
+        delete_collection, delete_in_vector_document, read_collection_deserialized,
+        serialize_collection, store_collection, string_to_document,
+    },
+    orchestrator::Orchestrator,
+};
 
 use super::get_data;
 
@@ -28,7 +34,30 @@ pub async fn handle_delete(
             }
         } else {
             //If theres data, we remove the documents inside the collection
-            return Ok("Not implemented...".to_string()); //TODO implement removing of documents inside collection
+            match string_to_document(data) {
+                Ok(doc) => {
+                    match read_collection_deserialized(&database_name, &collection_name).await {
+                        Ok(mut vec) => match delete_in_vector_document(&mut vec, doc) {
+                            Ok(_e) => match serialize_collection(vec) {
+                                Ok(ser_vec) => match store_collection(
+                                    ser_vec,
+                                    &database_name,
+                                    &collection_name,
+                                )
+                                .await
+                                {
+                                    Ok(res) => return Ok(res),
+                                    Err(e) => return Err(e),
+                                },
+                                Err(e) => return Err(e),
+                            },
+                            Err(e) => return Err(e),
+                        },
+                        Err(e) => return Err(e),
+                    }
+                }
+                Err(e) => return Err(e),
+            }
         }
     } else {
         return Err("Database doesnt exist.".to_string());

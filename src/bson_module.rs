@@ -208,3 +208,22 @@ pub fn search_in_vector_document(vector: Vec<Document>, doc: Document) -> Vec<Do
 
     return found_vector;
 }
+
+pub fn delete_in_vector_document(vector: &mut Vec<Document>, doc: Document) -> Result<String, String> {
+    let document_hashmap = get_document_keys(&doc);
+
+    if document_hashmap.is_empty() {
+        return Err("No conditions in delete sent.".to_string());
+    }
+
+    vector.retain(|document| {
+        for (key, value) in document_hashmap.iter() {
+            if document.contains_key(key) && document.get(key) == Some(value) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    return Ok("OK".to_string());
+}
