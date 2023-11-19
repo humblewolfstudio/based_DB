@@ -15,9 +15,7 @@ use crate::handlers::{
 };
 
 mod bson_module;
-mod collection;
 mod command_handler;
-mod database;
 mod handlers;
 mod orchestrator;
 

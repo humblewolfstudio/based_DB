@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::collection::Collection;
+use super::Collection;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Database {

@@ -1,6 +1,6 @@
 use super::aux_fn::get_data;
 
-use crate::{bson_module, bson_module::store_document, orchestrator::Orchestrator};
+use crate::{bson_module, bson_module::store_document, orchestrator::orchestrator::Orchestrator};
 
 //Convertim el string entrant en un document, llegim la coleccio guardada e insertem el document en la coleccio
 pub async fn handle_insert(
