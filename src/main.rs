@@ -1,5 +1,4 @@
-use orchestrator_handler::{load_orchestrator, Orchestrator, User};
-use tcp_server::orchestrator_handler;
+use orchestrator::{load_orchestrator, Orchestrator, User};
 
 use std::{ops::Add, sync::Arc};
 
@@ -16,8 +15,11 @@ use crate::handlers::{
 };
 
 mod bson_module;
+mod collection;
 mod command_handler;
+mod database;
 mod handlers;
+mod orchestrator;
 
 #[tokio::main]
 async fn main() {

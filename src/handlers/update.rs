@@ -1,6 +1,6 @@
-use tcp_server::get_data;
+use super::aux_fn::get_data;
 
-use crate::orchestrator_handler::Orchestrator;
+use crate::orchestrator::Orchestrator;
 
 pub async fn handle_update(
     message: &Vec<&str>,

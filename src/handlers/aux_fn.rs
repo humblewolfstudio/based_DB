@@ -1,14 +1,8 @@
-pub mod orchestrator_handler;
-
-pub use orchestrator_handler::{Collection, Database, Orchestrator};
-
-mod bson_module;
-
 pub fn get_data(data: Vec<&str>) -> (String, String, String) {
     let database;
     let collection;
     let content;
-    
+
     let len = data.len();
 
     if len <= 0 {
