@@ -1,15 +1,24 @@
-use crate::orchestrator::Orchestrator;
+use crate::orchestrator::{Orchestrator, User};
 
 use super::get_data;
 
 pub async fn handle_update(
     message: &Vec<&str>,
     orchestrator: &mut Orchestrator,
+    user: &User,
 ) -> Result<String, String> {
     let (database, collection, data) = get_data(message.to_vec());
 
     if database.eq("") {
         return Err("No database sent.".to_string());
+    }
+
+    if !user.is_database_in_user(&database) {
+        return Err("This user cant interact with this database".to_string());
+    }
+
+    if !user.has_user_permission(super::Command::UPDATE) {
+        return Err("This user cant UPDATE this database".to_string());
     }
 
     if collection.eq("") {

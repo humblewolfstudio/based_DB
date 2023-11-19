@@ -36,7 +36,7 @@ impl Orchestrator {
                 //Supervisor is supervisor:1234
                 "supervisor".to_string(),
                 "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4".to_string(),
-                Vec::new(),
+                vec![("*".to_string())],
                 "*".to_string(),
             )],
             secure,

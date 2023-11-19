@@ -5,17 +5,26 @@ use crate::{
         read_collection_deserialized, search_in_vector_document, serialize_collection_to_string,
         string_to_document,
     },
-    orchestrator::Orchestrator,
+    orchestrator::{Orchestrator, User},
 };
 
 pub async fn handle_find(
     message: &Vec<&str>,
     orchestrator: &mut Orchestrator,
+    user: &User,
 ) -> Result<String, String> {
     let (database_name, collection_name, data) = get_data(message.to_vec());
 
     if database_name.is_empty() {
         return Err("Database not sent.".to_string());
+    }
+
+    if !user.is_database_in_user(&database_name) {
+        return Err("This user cant interact with this database".to_string());
+    }
+
+    if !user.has_user_permission(super::Command::FIND) {
+        return Err("This user cant FIND to this database".to_string());
     }
 
     if collection_name.is_empty() {

@@ -1,14 +1,30 @@
 use super::get_data;
 
-use crate::{bson_module, bson_module::store_document, orchestrator::orchestrator::Orchestrator};
+use crate::{
+    bson_module,
+    bson_module::store_document,
+    orchestrator::{orchestrator::Orchestrator, User},
+};
 
 //Convertim el string entrant en un document, llegim la coleccio guardada e insertem el document en la coleccio
 pub async fn handle_insert(
     message: &Vec<&str>,
     orchestrator: &mut Orchestrator,
+    user: &User,
 ) -> Result<String, String> {
     let (database_name, collection_name, data) = get_data(message.to_vec());
-    //We check if db, collection and data are present. If not, we return an error
+
+    if database_name.is_empty() {
+        return Err("Database not sent.".to_string());
+    }
+
+    if !user.is_database_in_user(&database_name) {
+        return Err("This user cant interact with this database".to_string());
+    }
+
+    if !user.has_user_permission(super::Command::INSERT) {
+        return Err("This user cant INSERT to the database".to_string());
+    }
 
     if let Some(database) = orchestrator.get_database(&database_name) {
         if collection_name.is_empty() {

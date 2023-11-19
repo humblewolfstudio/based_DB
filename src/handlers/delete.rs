@@ -3,7 +3,7 @@ use crate::{
         delete_collection, delete_in_vector_document, read_collection_deserialized,
         serialize_collection, store_collection, string_to_document,
     },
-    orchestrator::Orchestrator,
+    orchestrator::{Orchestrator, User},
 };
 
 use super::get_data;
@@ -11,11 +11,20 @@ use super::get_data;
 pub async fn handle_delete(
     message: &Vec<&str>,
     orchestrator: &mut Orchestrator,
+    user: &User,
 ) -> Result<String, String> {
     let (database_name, collection_name, data) = get_data(message.to_vec());
 
     if database_name.is_empty() {
         return Err("No database sent".to_string());
+    }
+
+    if !user.is_database_in_user(&database_name) {
+        return Err("This user cant interact with this database".to_string());
+    }
+
+    if !user.has_user_permission(super::Command::DELETE) {
+        return Err("This user cant DELETE to this database".to_string());
     }
 
     if collection_name.is_empty() {

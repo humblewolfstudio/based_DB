@@ -143,7 +143,7 @@ async fn handle_response(
     command: Command,
     data: Vec<&str>,
     orchestrator: &mut Orchestrator,
-    _user: &User,
+    user: &User,
 ) {
     println!("Received command: {:?}", command.to_string());
     //Si la variable solo se le asignara el valor una vez, no tiene porque ser mutable y no hace falta definirla
@@ -154,27 +154,30 @@ async fn handle_response(
     //let (database, collection, content) = get_data(data);
 
     match command {
-        Command::INSERT => match handle_insert(&data, orchestrator).await {
+        Command::INSERT => match handle_insert(&data, orchestrator, user).await {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
-        Command::FIND => match handle_find(&data, orchestrator).await {
+        Command::FIND => match handle_find(&data, orchestrator, user).await {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
-        Command::UPDATE => match handle_update(&data, orchestrator).await {
+        Command::UPDATE => match handle_update(&data, orchestrator, user).await {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
-        Command::CREATE => match handle_create(&data, orchestrator) {
+        Command::CREATE => match handle_create(&data, orchestrator, user) {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
-        Command::DELETE => match handle_delete(&data, orchestrator).await {
+        Command::DELETE => match handle_delete(&data, orchestrator, user).await {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
-        Command::PEEK => response = handle_peek(&data, orchestrator),
+        Command::PEEK => match handle_peek(&data, orchestrator, user) {
+            Ok(res) => response = res,
+            Err(e) => response = "ERROR: ".to_owned().add(&e),
+        },
     }
     return send_response(socket, response).await;
 }
