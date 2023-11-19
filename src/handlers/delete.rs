@@ -43,7 +43,7 @@ pub async fn handle_delete(
             }
         } else {
             //If theres data, we remove the documents inside the collection
-            match string_to_document(data) {
+            match string_to_document(&data) {
                 Ok(doc) => {
                     match read_collection_deserialized(&database_name, &collection_name).await {
                         Ok(mut vec) => match delete_in_vector_document(&mut vec, doc) {

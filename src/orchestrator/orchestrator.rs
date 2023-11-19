@@ -67,9 +67,10 @@ impl Orchestrator {
 
     pub fn create_user(
         &mut self,
-        username: String,
+        username: &String,
         password: &String,
-        database: String,
+        database: &String,
+        permissions: Vec<String>,
     ) -> Result<String, String> {
         let hashed_pw;
         for user in &self.users {
@@ -84,7 +85,7 @@ impl Orchestrator {
         }
 
         self.users
-            .push(User::new(username, hashed_pw, Vec::new(), database));
+            .push(User::new(username, hashed_pw, permissions, database));
 
         return Ok("OK".to_string());
     }

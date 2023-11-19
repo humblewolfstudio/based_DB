@@ -1,4 +1,5 @@
 use core::fmt;
+use std::fmt::write;
 
 #[derive(Debug)]
 pub enum Command {
@@ -8,6 +9,7 @@ pub enum Command {
     CREATE, //For creating databases
     PEEK,
     DELETE,
+    REGISTER,
 }
 
 //Los enums necesitan esto para poder hacer el .to_string()
@@ -20,6 +22,7 @@ impl fmt::Display for Command {
             Command::CREATE => write!(f, "CREATE"),
             Command::PEEK => write!(f, "PEEK"),
             Command::DELETE => write!(f, "DELETE"),
+            Command::REGISTER => write!(f, "REGISTER"),
         }
     }
 }
@@ -32,6 +35,7 @@ pub fn process_command(command: &str) -> Result<Command, String> {
         "create" => return Ok(Command::CREATE),
         "peek" => return Ok(Command::PEEK),
         "delete" => return Ok(Command::DELETE),
+        "register" => return Ok(Command::REGISTER),
         _ => return Err(String::from("Command doesnt exist")),
     }
 }

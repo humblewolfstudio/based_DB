@@ -43,7 +43,7 @@ pub async fn handle_insert(
 
         let document;
 
-        match bson_module::string_to_document(data) {
+        match bson_module::string_to_document(&data) {
             Ok(res) => document = res,
             Err(e) => return Err(e),
         }

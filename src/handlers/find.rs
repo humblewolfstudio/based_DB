@@ -42,7 +42,7 @@ pub async fn handle_find(
 
         let _collection = database.get_collection(&collection_name);
 
-        match string_to_document(data) {
+        match string_to_document(&data) {
             Ok(doc) => match read_collection_deserialized(&database_name, &collection_name).await {
                 Ok(vec) => {
                     let found = search_in_vector_document(vec, doc);

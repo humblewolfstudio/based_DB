@@ -86,7 +86,7 @@ pub async fn read_collection_deserialized(
     }
 }
 
-pub fn string_to_document(string: String) -> Result<Document, String> {
+pub fn string_to_document(string: &String) -> Result<Document, String> {
     //let json_value = serde_json::from_str(&string);
     match serde_json::from_str::<Value>(&string) {
         Ok(json_value) => {

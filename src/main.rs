@@ -11,7 +11,7 @@ use handlers::{
     command_handler, handle_create, handle_find, handle_insert, handle_peek, handle_update, Command,
 };
 
-use crate::handlers::handle_delete;
+use crate::handlers::{handle_delete, handle_register};
 
 mod bson_module;
 mod handlers;
@@ -175,6 +175,10 @@ async fn handle_response(
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
         Command::PEEK => match handle_peek(&data, orchestrator, user) {
+            Ok(res) => response = res,
+            Err(e) => response = "ERROR: ".to_owned().add(&e),
+        },
+        Command::REGISTER => match handle_register(&data.join(""), orchestrator, user) {
             Ok(res) => response = res,
             Err(e) => response = "ERROR: ".to_owned().add(&e),
         },
