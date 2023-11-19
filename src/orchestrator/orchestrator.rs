@@ -72,15 +72,15 @@ impl Orchestrator {
         database: String,
     ) -> Result<String, String> {
         let hashed_pw;
-        match hash_string(password, Algorithm::SHA256) {
-            Ok(hashed_res) => hashed_pw = hashed_res,
-            Err(_e) => return Err("Error hashing the password".to_string()),
-        }
-
         for user in &self.users {
             if username.eq(&user.get_username()) {
                 return Err("User with same name already exists".to_string());
             }
+        }
+
+        match hash_string(password, Algorithm::SHA256) {
+            Ok(hashed_res) => hashed_pw = hashed_res,
+            Err(_e) => return Err("Error hashing the password".to_string()),
         }
 
         self.users
