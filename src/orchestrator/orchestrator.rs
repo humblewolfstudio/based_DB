@@ -84,10 +84,17 @@ impl Orchestrator {
             Err(_e) => return Err("Error hashing the password".to_string()),
         }
 
-        self.users
-            .push(User::new(username, hashed_pw, permissions, database));
+        self.users.push(User::new(
+            username.to_string(),
+            hashed_pw.to_string(),
+            permissions,
+            database.to_string(),
+        ));
 
-        return Ok("OK".to_string());
+        match self.save_orchestrator() {
+            Ok(ok) => return Ok(ok),
+            Err(e) => return Err(e),
+        }
     }
 
     pub fn get_databases(&self) -> Vec<Database> {

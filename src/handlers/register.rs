@@ -45,18 +45,13 @@ pub fn handle_register(
 
     match document.get("permissions") {
         Some(Bson::Array(_permissions)) => {
-            if let Some(permissions_array) = _permissions
+            let found_permissions: Vec<String> = _permissions
                 .iter()
                 .filter_map(Bson::as_str)
-                .collect::<Vec<_>>()
-                .as_slice()
-                .try_into() //TODO arreglar porfa
-                .ok()
-            {
-                permissions = permissions_array
-            } else {
-                return Err("Permissions is missing".to_string()),
-            }
+                .map(ToString::to_string)
+                .collect();
+
+            permissions = found_permissions;
         }
         Some(_) => return Err("Permissions has to be an Array of String".to_string()),
         None => return Err("Permissions is missing".to_string()),
@@ -68,6 +63,8 @@ pub fn handle_register(
         None => return Err("Database is missing".to_string()),
     }
 
-    orchestrator.create_user(username, password, database, permissions);
-    return Ok("OK".to_string());
+    match orchestrator.create_user(username, password, database, permissions) {
+        Ok(_ok) => return Ok("OK".to_string()),
+        Err(e) => return Err(e),
+    }
 }
