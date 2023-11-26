@@ -75,6 +75,7 @@ async fn main() {
 async fn process(mut socket: TcpStream, mut orchestrator: Orchestrator, user: User) {
     let mut buf = vec![0; 1024];
     println!("New connection");
+    send_response(&mut socket, "Connected to the Database".into()).await;
 
     //si fem return, es "tanca" la conexio pero el front segueix conectat, per això hem de fer continue!!
     //Ponemos un bucle para leer de el socket y devolver la informacion
