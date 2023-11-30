@@ -17,6 +17,10 @@ mod bson_module;
 mod handlers;
 mod orchestrator;
 
+//TODO quan fem spam de peek la CPU puja al 100% xd
+//TODO crec que es quan es conecten masses usuaris, hauria de desconectar els que ja no estiguin
+//TODO ja esta mig solucionat, lo unic que si no tanquen bé les conexions TCP, caca xd
+
 #[tokio::main]
 async fn main() {
     //Creamos un TCPListener en el puerto 6379
@@ -84,7 +88,8 @@ async fn process(mut socket: TcpStream, mut orchestrator: Orchestrator, user: Us
     while let Ok(n) = socket.read(&mut buf).await {
         //si n esta vacia (no hay mensaje) hacemos return
         if n == 0 {
-            continue;
+            println!("Disconnected");
+            return;
         }
         //Printeamos el buffer recibido, si hacemos unwrap cogemos solo el valor
         //Si hacemos sin eso nos devuelve Ok(mensaje) o Err(error)

@@ -15,7 +15,7 @@ pub fn handle_peek(
             orchestrator
                 .get_databases()
                 .iter()
-                .map(|db| db.get_name().clone())
+                .map(|db| format!("\"{}\"", db.get_name().clone()))
                 .collect::<Vec<String>>()
                 .join(", ")
         ));
@@ -29,7 +29,7 @@ pub fn handle_peek(
                 database
                     .get_collections()
                     .iter()
-                    .map(|coll| coll.get_name())
+                    .map(|coll| format!("\"{}\"", coll.get_name()))
                     .collect::<Vec<String>>()
                     .join(", ")
             ));
